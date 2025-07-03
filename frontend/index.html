@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Analytics Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="netflix-logo">NETFLIX</div>
+                    <div class="logo-separator"></div>
+                    <h1>Analytics</h1>
+                </div>
+                <div class="header-controls">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-header">
+                <h2>Casos de Uso - MongoDB y Cassandra</h2>
+                <p>Gestiona y analiza los datos de visualización de Netflix</p>
+            </div>
+
+            <div class="cases-grid">
+                <!-- Caso 1 -->
+                <div class="case-card" data-case="1">
+                    <div class="case-header" onclick="toggleMenu(1)">
+                        <div class="case-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="case-info">
+                            <h3>Títulos más vistos</h3>
+                            <p>Gestión de contenido popular por semana</p>
+                        </div>
+                        <div class="case-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div id="menu1" class="case-content">
+                        <div class="section">
+                            <h4><i class="fas fa-plus-circle"></i> Crear Registro</h4>
+                            <div class="form-grid">
+                                <div class="input-group">
+                                    <label for="inputSemana">Año-Semana</label>
+                                    <input type="text" id="inputSemana" placeholder="Ej: 2025-W25">
+                                </div>
+                                <div class="input-group">
+                                    <label for="inputTitulo">Título</label>
+                                    <input type="text" id="inputTitulo" placeholder="Nombre del contenido">
+                                </div>
+                                <div class="input-group">
+                                    <label for="inputVistas">Vistas</label>
+                                    <input type="number" id="inputVistas" min="0" placeholder="Número de vistas">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="crearTitulo()">
+                                <i class="fas fa-save"></i> Agregar
+                            </button>
+                        </div>
+
+                        <div class="section">
+                            <h4><i class="fas fa-search"></i> Consultar Títulos</h4>
+                            <div class="search-bar">
+                                <input type="text" id="inputSemanaConsulta" placeholder="Año-semana (opcional)">
+                                <button class="btn btn-secondary" onclick="consultarTitulos()">
+                                    <i class="fas fa-search"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h4><i class="fas fa-list"></i> Resultados</h4>
+                            <div id="respuestaCaso1" class="results-container">
+                                Esperando acción...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Caso 2 -->
+                <div class="case-card" data-case="2">
+                    <div class="case-header" onclick="toggleMenu(2)">
+                        <div class="case-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="case-info">
+                            <h3>Géneros populares</h3>
+                            <p>Análisis de géneros por país</p>
+                        </div>
+                        <div class="case-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div id="menu2" class="case-content">
+                        <div class="section">
+                            <h4><i class="fas fa-plus-circle"></i> Crear Registro</h4>
+                            <div class="form-grid">
+                                <div class="input-group">
+                                    <label for="inputPais">País</label>
+                                    <input type="text" id="inputPais" placeholder="Nombre del país">
+                                </div>
+                                <div class="input-group">
+                                    <label for="inputGenero">Género</label>
+                                    <input type="text" id="inputGenero" placeholder="Género del contenido">
+                                </div>
+                                <div class="input-group">
+                                    <label for="inputVisualizaciones">Visualizaciones</label>
+                                    <input type="number" id="inputVisualizaciones" min="0" placeholder="Número de visualizaciones">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="crearGenero()">
+                                <i class="fas fa-save"></i> Agregar
+                            </button>
+                        </div>
+
+                        <div class="section">
+                            <h4><i class="fas fa-search"></i> Consultar Géneros</h4>
+                            <div class="search-bar">
+                                <input type="text" id="inputPaisConsulta" placeholder="País (opcional)">
+                                <button class="btn btn-secondary" onclick="consultarGeneros()">
+                                    <i class="fas fa-search"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h4><i class="fas fa-list"></i> Resultados</h4>
+                            <div id="respuestaCaso2" class="results-container">
+                                Esperando acción...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Casos 3-6 (Placeholders mejorados) -->
+                <div class="case-card" data-case="3">
+                    <div class="case-header" onclick="toggleMenu(3)">
+                        <div class="case-icon">
+                            <i class="fas fa-tv"></i>
+                        </div>
+                        <div class="case-info">
+                            <h3>Visualizaciones de serie</h3>
+                            <p>Análisis detallado por contenido</p>
+                        </div>
+                        <div class="case-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div id="menu3" class="case-content">
+                        <div class="placeholder-content">
+                            <i class="fas fa-tools"></i>
+                            <h4>Funcionalidad en desarrollo</h4>
+                            <p>Esta sección estará disponible próximamente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="case-card" data-case="4">
+                    <div class="case-header" onclick="toggleMenu(4)">
+                        <div class="case-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="case-info">
+                            <h3>+1000 vistas último año</h3>
+                            <p>Contenido más popular del año</p>
+                        </div>
+                        <div class="case-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div id="menu4" class="case-content">
+                        <div class="placeholder-content">
+                            <i class="fas fa-tools"></i>
+                            <h4>Funcionalidad en desarrollo</h4>
+                            <p>Esta sección estará disponible próximamente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="case-card" data-case="5">
+                    <div class="case-header" onclick="toggleMenu(5)">
+                        <div class="case-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="case-info">
+                            <h3>Dispositivos por país</h3>
+                            <p>Análisis de dispositivos de reproducción</p>
+                        </div>
+                        <div class="case-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div id="menu5" class="case-content">
+                        <div class="placeholder-content">
+                            <i class="fas fa-tools"></i>
+                            <h4>Funcionalidad en desarrollo</h4>
+                            <p>Esta sección estará disponible próximamente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="case-card" data-case="6">
+                    <div class="case-header" onclick="toggleMenu(6)">
+                        <div class="case-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="case-info">
+                            <h3>Mejores series calificadas</h3>
+                            <p>Top de contenido mejor valorado</p>
+                        </div>
+                        <div class="case-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div id="menu6" class="case-content">
+                        <div class="placeholder-content">
+                            <i class="fas fa-tools"></i>
+                            <h4>Funcionalidad en desarrollo</h4>
+                            <p>Esta sección estará disponible próximamente</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
