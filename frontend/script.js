@@ -157,7 +157,7 @@ async function crearTitulo() {
     }
 
     try {
-      const res = await fetch(`http://localhost:3001/caso1/${originalSemana}/${id_contenido}`, {
+      const res = await fetch(`https://netflix-backend-qbml.onrender.com/caso1/${originalSemana}/${id_contenido}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ano_semana: semana, titulo, vistas: vistasInt }),
@@ -183,7 +183,7 @@ async function crearTitulo() {
   } else {
     const data = { ano_semana: semana, titulo, vistas: vistasInt }
     try {
-      const res = await fetch("http://localhost:3001/caso1", {
+      const res = await fetch("https://netflix-backend-qbml.onrender.com/caso1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -212,7 +212,7 @@ async function consultarTitulos() {
   const semana = document.getElementById("inputSemanaConsulta").value.trim()
   showLoading("respuestaCaso1")
 
-  let url = "http://localhost:3001/caso1"
+  let url = "https://netflix-backend-qbml.onrender.com/caso1"
   if (semana) {
     url += `/${semana}`
   }
@@ -269,7 +269,7 @@ async function eliminarTitulo(ano_semana, id_contenido) {
   if (!showConfirm("¿Estás seguro de eliminar este registro?")) return
 
   try {
-    const res = await fetch(`http://localhost:3001/caso1/${ano_semana}/${id_contenido}`, {
+    const res = await fetch(`https://netflix-backend-qbml.onrender.com/caso1/${ano_semana}/${id_contenido}`, {
       method: "DELETE",
     })
     const resultado = await res.json()
@@ -324,7 +324,7 @@ async function crearGenero() {
     }
 
     try {
-      await fetch(`http://localhost:3001/caso2/${paisOriginal}/${generoOriginal}`, {
+      await fetch(`https://netflix-backend-qbml.onrender.com/caso2/${paisOriginal}/${generoOriginal}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ genero, visualizaciones: visualizacionesInt }),
@@ -340,7 +340,7 @@ async function crearGenero() {
     }
   } else {
     try {
-      const res = await fetch("http://localhost:3001/caso2", {
+      const res = await fetch("https://netflix-backend-qbml.onrender.com/caso2", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pais, genero, visualizaciones: visualizacionesInt }),
@@ -368,7 +368,7 @@ async function consultarGeneros() {
   const pais = document.getElementById("inputPaisConsulta").value.trim()
   showLoading("respuestaCaso2")
 
-  let url = "http://localhost:3001/caso2"
+  let url = "https://netflix-backend-qbml.onrender.com/caso2"
   if (pais) url += `/${pais}`
 
   try {
@@ -415,7 +415,7 @@ async function eliminarGenero(pais, genero, visualizaciones) {
     if (!confirmacion) return;
   
     try {
-      const res = await fetch(`http://localhost:3001/caso2/${pais}/${visualizaciones}/${encodeURIComponent(genero)}`, {
+      const res = await fetch(`https://netflix-backend-qbml.onrender.com/caso2/${pais}/${visualizaciones}/${encodeURIComponent(genero)}`, {
         method: 'DELETE'
       });
       const resultado = await res.json();
