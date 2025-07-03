@@ -4,18 +4,18 @@ const mongoose = require('mongoose');
 const cassandra = require('cassandra-driver');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config(); // 👈 Carga variables del .env
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Conexión a MongoDB
+// MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Conectado a MongoDB'))
   .catch(err => console.error('❌ Error conectando a MongoDB:', err));
 
-// Conexión a Cassandra
+// Cassandra
 const cassandraClient = new cassandra.Client({
   cloud: {
     secureConnectBundle: path.join(__dirname, '..', process.env.ASTRA_DB_BUNDLE_PATH)
@@ -31,147 +31,88 @@ cassandraClient.connect()
   .then(() => console.log('✅ Conectado a Cassandra'))
   .catch(err => console.error('❌ Error conectando a Cassandra:', err));
 
-// MODELO MongoDB
-const Contenido = mongoose.model('Contenido', new mongoose.Schema({
-  titulo: String,
-  generos: [String],
-  es_pelicula: Boolean,
-  anio: Number,
-  descripcion: String,
-  duracion_minutos: Number,
-  cantidad_visualizaciones: Number,
-  calificacion_promedio: Number,
-  cantidad_calificaciones: Number
-}));
-
-// ===================
-// CASO 1 - Visualizaciones (Cassandra)
-// ===================
+/* ========== CASO 1: TITULOS MAS VISTOS POR SEMANA ========== */
 app.post('/caso1', async (req, res) => {
-  let { ano_semana, titulo, vistas } = req.body;
-
-  const vistasInt = parseInt(vistas);
-  if (
-    !ano_semana ||
-    !titulo ||
-    isNaN(vistasInt) ||
-    vistasInt < 0 ||
-    vistasInt > Number.MAX_SAFE_INTEGER
-  ) {
-    return res.status(400).json({
-      error: '❌ Datos incompletos o inválidos (vistas debe ser un número entero válido)',
-    });
-  }
-
+  const { ano_semana, id_contenido, titulo, vistas } = req.body;
   try {
-    const nuevoId = cassandra.types.Uuid.random();
-
     await cassandraClient.execute(
-      `INSERT INTO vistas_por_semana (ano_semana, id_contenido, titulo, vistas)
-       VALUES (?, ?, ?, ?)`,
-      [ano_semana, nuevoId, titulo, vistasInt], // ✅ vistasInt como número
+      `INSERT INTO titulos_mas_vistos_por_semana (ano_semana, id_contenido, titulo, vistas) VALUES (?, ?, ?, ?)`,
+      [ano_semana, cassandra.types.Uuid.fromString(id_contenido), titulo, parseInt(vistas)],
       { prepare: true }
     );
-
-    res.json({ mensaje: '✅ Registro creado', id_contenido: nuevoId.toString() });
+    res.sendStatus(201);
   } catch (error) {
-    res.status(500).json({ error: '❌ Error al crear registro', detalle: error.message });
+    console.error('❌ Error al insertar en caso1:', error);
+    res.sendStatus(500);
   }
 });
 
 app.get('/caso1', async (req, res) => {
+  const { semana } = req.query;
   try {
-    const result = await cassandraClient.execute(`SELECT * FROM vistas_por_semana`);
+    let query = `SELECT * FROM titulos_mas_vistos_por_semana`;
+    const params = [];
+    if (semana) {
+      query += ` WHERE ano_semana = ?`;
+      params.push(semana);
+    }
+    const result = await cassandraClient.execute(query, params, { prepare: true });
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: '❌ Error al consultar todos los registros', detalle: error.message });
+    console.error('❌ Error al consultar en caso1:', error);
+    res.sendStatus(500);
   }
 });
 
-app.get('/caso1/:ano_semana', async (req, res) => {
-  const { ano_semana } = req.params;
+app.put('/caso1', async (req, res) => {
+  const { ano_semana, id_contenido, titulo, vistas } = req.body;
   try {
-    const result = await cassandraClient.execute(
-      `SELECT * FROM vistas_por_semana WHERE ano_semana = ?`,
-      [ano_semana]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: '❌ Error al consultar registros', detalle: error.message });
-  }
-});
-
-app.put('/caso1/:ano_semana/:id_contenido', async (req, res) => {
-  const { ano_semana: originalSemana, id_contenido } = req.params;
-  let { ano_semana: nuevaSemana, titulo, vistas } = req.body;
-
-  const vistasInt = parseInt(vistas);
-  if (!titulo || !nuevaSemana || isNaN(vistasInt) || vistasInt < 0) {
-    return res.status(400).json({ error: '❌ Datos inválidos para actualizar' });
-  }
-
-  try {
-    // 1. Eliminar el registro anterior
     await cassandraClient.execute(
-      `DELETE FROM vistas_por_semana WHERE ano_semana = ? AND id_contenido = ?`,
-      [originalSemana, cassandra.types.Uuid.fromString(id_contenido)],
+      `UPDATE titulos_mas_vistos_por_semana SET titulo = ?, vistas = ? WHERE ano_semana = ? AND id_contenido = ?`,
+      [titulo, parseInt(vistas), ano_semana, cassandra.types.Uuid.fromString(id_contenido)],
       { prepare: true }
     );
-
-    // 2. Insertar el nuevo con el nuevo año-semana (se mantiene el mismo id)
-    await cassandraClient.execute(
-      `INSERT INTO vistas_por_semana (ano_semana, id_contenido, titulo, vistas)
-       VALUES (?, ?, ?, ?)`,
-      [nuevaSemana, cassandra.types.Uuid.fromString(id_contenido), titulo, vistasInt],
-      { prepare: true }
-    );
-
-    res.json({ mensaje: '✅ Registro actualizado correctamente' });
+    res.sendStatus(200);
   } catch (error) {
-    res.status(500).json({ error: '❌ Error al actualizar', detalle: error.message });
+    console.error('❌ Error al actualizar en caso1:', error);
+    res.sendStatus(500);
   }
 });
 
-app.delete('/caso1/:ano_semana/:id_contenido', async (req, res) => {
-  const { ano_semana, id_contenido } = req.params;
-
+app.delete('/caso1', async (req, res) => {
+  const { ano_semana, id_contenido } = req.body;
   try {
     await cassandraClient.execute(
-      `DELETE FROM vistas_por_semana WHERE ano_semana = ? AND id_contenido = ?`,
-      [ano_semana, cassandra.types.Uuid.fromString(id_contenido)]
+      `DELETE FROM titulos_mas_vistos_por_semana WHERE ano_semana = ? AND id_contenido = ?`,
+      [ano_semana, cassandra.types.Uuid.fromString(id_contenido)],
+      { prepare: true }
     );
-    res.json({ mensaje: '🗑️ Registro eliminado' });
+    res.sendStatus(200);
   } catch (error) {
-    res.status(500).json({ error: '❌ Error al eliminar registro', detalle: error.message });
+    console.error('❌ Error al eliminar en caso1:', error);
+    res.sendStatus(500);
   }
 });
 
-// ===================
-// CASO 2 - Géneros populares por país (Cassandra)
-// ===================
+/* ========== CASO 2: GENEROS POPULARES POR PAIS ========== */
 app.post('/caso2', async (req, res) => {
   const { pais, genero, visualizaciones } = req.body;
-
-  const visInt = parseInt(visualizaciones);
-  if (!pais || !genero || isNaN(visInt) || visInt < 0) {
-    return res.status(400).json({ error: '❌ Datos inválidos para insertar.' });
-  }
-
   try {
     await cassandraClient.execute(
       `INSERT INTO generos_por_pais (pais, genero, visualizaciones) VALUES (?, ?, ?)`,
-      [pais, genero, visInt],
+      [pais, genero, parseInt(visualizaciones)],
       { prepare: true }
     );
-    res.json({ mensaje: '✅ Género insertado correctamente' });
+    res.sendStatus(201);
   } catch (error) {
-    res.status(500).json({ error: '❌ Error al insertar género', detalle: error.message });
+    console.error('❌ Error al insertar en caso2:', error);
+    res.sendStatus(500);
   }
 });
 
-app.get('/caso2/:pais', async (req, res) => {
+app.get('/caso2', async (req, res) => {
+  const { pais } = req.query;
   try {
-    const { pais } = req.params;
     const result = await cassandraClient.execute(
       `SELECT * FROM generos_por_pais WHERE pais = ?`,
       [pais],
@@ -179,130 +120,102 @@ app.get('/caso2/:pais', async (req, res) => {
     );
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: 'Error consultando', detalle: error.message });
+    console.error('❌ Error al consultar en caso2:', error);
+    res.sendStatus(500);
   }
 });
 
-app.get('/caso2', async (req, res) => {
+app.put('/caso2', async (req, res) => {
+  const { pais, genero, visualizaciones } = req.body;
   try {
-    const result = await cassandraClient.execute(`SELECT * FROM generos_por_pais`);
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Error consultando todos', detalle: error.message });
-  }
-});
-
-app.put('/caso2/:pais/:genero', async (req, res) => {
-  const { pais, genero } = req.params;
-  const { visualizaciones } = req.body;
-
-  const visInt = parseInt(visualizaciones);
-  if (isNaN(visInt) || visInt < 0) {
-    return res.status(400).json({ error: 'Visualizaciones inválidas' });
-  }
-
-  try {
-    // Borrar y volver a insertar (por cambio de clustering key)
     await cassandraClient.execute(
-      `DELETE FROM generos_por_pais WHERE pais = ? AND visualizaciones = ? AND genero = ?`,
-      [pais, visInt, genero],
+      `UPDATE generos_por_pais SET visualizaciones = ? WHERE pais = ? AND visualizaciones = ? AND genero = ?`,
+      [parseInt(visualizaciones), pais, parseInt(visualizaciones), genero],
       { prepare: true }
     );
-
-    await cassandraClient.execute(
-      `INSERT INTO generos_por_pais (pais, visualizaciones, genero) VALUES (?, ?, ?)`,
-      [pais, visInt, genero],
-      { prepare: true }
-    );
-
-    res.json({ mensaje: '✅ Registro actualizado' });
+    res.sendStatus(200);
   } catch (error) {
-    res.status(500).json({ error: 'Error actualizando', detalle: error.message });
+    console.error('❌ Error al actualizar en caso2:', error);
+    res.sendStatus(500);
   }
 });
 
-app.delete('/caso2/:pais/:visualizaciones/:genero', async (req, res) => {
-  const { pais, visualizaciones, genero } = req.params;
-
+app.delete('/caso2', async (req, res) => {
+  const { pais, genero, visualizaciones } = req.body;
   try {
     await cassandraClient.execute(
       `DELETE FROM generos_por_pais WHERE pais = ? AND visualizaciones = ? AND genero = ?`,
       [pais, parseInt(visualizaciones), genero],
       { prepare: true }
     );
-    res.json({ mensaje: '🗑️ Registro eliminado' });
+    res.sendStatus(200);
   } catch (error) {
-    res.status(500).json({ error: '❌ Error al eliminar', detalle: error.message });
+    console.error('❌ Error al eliminar en caso2:', error);
+    res.sendStatus(500);
   }
 });
 
-// ===================
-// CASO 3 - Visualizaciones de una serie específica (Cassandra)
-// ===================
-const { v4: uuidv4 } = require('uuid');
-
-// Crear nueva visualización
-app.post("/caso3", async (req, res) => {
-  const { id_contenido, fecha_visualizacion, id_perfil } = req.body;
-
+/* ========== CASO 3: VISUALIZACIONES POR CONTENIDO ========== */
+app.post('/caso3', async (req, res) => {
+  const { id_contenido, fecha_visualizacion, id_visualizacion, id_perfil } = req.body;
   try {
-    const query = `INSERT INTO visualizaciones_por_contenido (
-      id_contenido, fecha_visualizacion, id_visualizacion, id_perfil
-    ) VALUES (?, ?, now(), ?)`;
-
-    await cassandraClient.execute(query, [
-      id_contenido,
-      fecha_visualizacion,
-      id_perfil
-    ], { prepare: true });
-
-    res.json({ mensaje: "✅ Visualización agregada" });
+    await cassandraClient.execute(
+      `INSERT INTO visualizaciones_por_contenido (id_contenido, fecha_visualizacion, id_visualizacion, id_perfil) VALUES (?, ?, ?, ?)`,
+      [
+        cassandra.types.Uuid.fromString(id_contenido),
+        new Date(fecha_visualizacion),
+        cassandra.types.TimeUuid.fromString(id_visualizacion),
+        cassandra.types.Uuid.fromString(id_perfil)
+      ],
+      { prepare: true }
+    );
+    res.sendStatus(201);
   } catch (error) {
-    console.error("❌ Error al crear visualización:", error);
-    res.status(500).json({ error: "Error al crear visualización" });
+    console.error('❌ Error al insertar en caso3:', error);
+    res.sendStatus(500);
   }
 });
 
-// Contar visualizaciones en rango de fechas para un contenido
-app.post("/caso3/contar", async (req, res) => {
-  const { id_contenido, desde, hasta } = req.body;
-
+app.get('/caso3', async (req, res) => {
+  const { id_contenido, fecha_inicio, fecha_fin } = req.query;
   try {
-    const query = `SELECT COUNT(*) FROM visualizaciones_por_contenido 
-      WHERE id_contenido = ? AND fecha_visualizacion >= ? AND fecha_visualizacion <= ?`;
-
-    const result = await cassandraClient.execute(query, [
-      id_contenido,
-      desde,
-      hasta
-    ], { prepare: true });
-
-    res.json({ total: result.rows[0]["count"].toString() });
+    const result = await cassandraClient.execute(
+      `SELECT COUNT(*) FROM visualizaciones_por_contenido WHERE id_contenido = ? AND fecha_visualizacion >= ? AND fecha_visualizacion <= ?`,
+      [
+        cassandra.types.Uuid.fromString(id_contenido),
+        new Date(fecha_inicio),
+        new Date(fecha_fin)
+      ],
+      { prepare: true }
+    );
+    res.json(result.rows[0]);
   } catch (error) {
-    console.error("❌ Error al contar visualizaciones:", error);
-    res.status(500).json({ error: "Error al contar visualizaciones" });
+    console.error('❌ Error al consultar en caso3:', error);
+    res.sendStatus(500);
   }
 });
 
-// Eliminar registro completo (requiere las 3 claves)
-app.delete("/caso3", async (req, res) => {
+app.delete('/caso3', async (req, res) => {
   const { id_contenido, fecha_visualizacion, id_visualizacion } = req.body;
-
   try {
-    const query = `DELETE FROM visualizaciones_por_contenido 
-      WHERE id_contenido = ? AND fecha_visualizacion = ? AND id_visualizacion = ?`;
-
-    await cassandraClient.execute(query, [
-      id_contenido,
-      fecha_visualizacion,
-      id_visualizacion
-    ], { prepare: true });
-
-    res.json({ mensaje: "✅ Registro eliminado" });
+    await cassandraClient.execute(
+      `DELETE FROM visualizaciones_por_contenido WHERE id_contenido = ? AND fecha_visualizacion = ? AND id_visualizacion = ?`,
+      [
+        cassandra.types.Uuid.fromString(id_contenido),
+        new Date(fecha_visualizacion),
+        cassandra.types.TimeUuid.fromString(id_visualizacion)
+      ],
+      { prepare: true }
+    );
+    res.sendStatus(200);
   } catch (error) {
-    console.error("❌ Error al eliminar visualización:", error);
-    res.status(500).json({ error: "Error al eliminar visualización" });
+    console.error('❌ Error al eliminar en caso3:', error);
+    res.sendStatus(500);
   }
+});
+
+app.listen(3001, () => {
+  console.log('🚀 Servidor backend escuchando en puerto 3001');
 });
 
 // ===================

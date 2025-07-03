@@ -441,6 +441,109 @@ function cargarGeneroParaEditar(pais, genero, visualizaciones) {
   document.getElementById("inputPais").scrollIntoView({ behavior: "smooth", block: "center" })
 }
 
+// CASO 3 - Visualizaciones de serie - Análisis detallado por contenido
+async function crearVisualizacionCaso3() {
+  const id_contenido = document.getElementById("inputIdContenido3").value.trim()
+  const fecha_visualizacion = document.getElementById("inputFecha3").value.trim()
+  const id_visualizacion = document.getElementById("inputIdVisualizacion3").value.trim()
+  const id_perfil = document.getElementById("inputIdPerfil3").value.trim()
+
+  if (!id_contenido || !fecha_visualizacion || !id_visualizacion || !id_perfil) {
+    showAlert("❌ Completá todos los campos correctamente.", "error")
+    return
+  }
+
+  try {
+    const res = await fetch("https://netflix-backend-qbml.onrender.com/caso3", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_contenido,
+        fecha_visualizacion,
+        id_visualizacion,
+        id_perfil
+      })
+    })
+    const data = await res.json()
+
+    if (res.ok) {
+      showAlert("✅ Visualización registrada exitosamente.", "success")
+      clearForm(["inputIdContenido3", "inputFecha3", "inputIdVisualizacion3", "inputIdPerfil3"])
+    } else {
+      showAlert(`❌ Error: ${data.detalle || data.error}`, "error")
+    }
+  } catch (error) {
+    showAlert("❌ Error al conectar con el backend.", "error")
+    console.error(error)
+  }
+}
+
+async function consultarVisualizacionesCaso3() {
+  const id_contenido = document.getElementById("inputIdContenidoConsulta3").value.trim()
+  const desde = document.getElementById("inputFechaDesde3").value.trim()
+  const hasta = document.getElementById("inputFechaHasta3").value.trim()
+
+  if (!id_contenido || !desde || !hasta) {
+    showAlert("❌ Completá todos los campos de filtro.", "error")
+    return
+  }
+
+  const url = `https://netflix-backend-qbml.onrender.com/caso3/count/${id_contenido}?desde=${desde}&hasta=${hasta}`
+
+  try {
+    const res = await fetch(url)
+    const data = await res.json()
+
+    if (res.ok) {
+      document.getElementById("respuestaCaso3").innerHTML = `
+        <div class="results-container">
+          <strong>🔢 Total de visualizaciones:</strong> ${data.total}
+        </div>
+      `
+    } else {
+      document.getElementById("respuestaCaso3").innerHTML = `
+        <div class="results-container" style="color: var(--danger-color);">
+          ❌ Error: ${data.detalle || data.error}
+        </div>
+      `
+    }
+  } catch (error) {
+    document.getElementById("respuestaCaso3").innerHTML =
+      '<div class="results-container" style="color: var(--danger-color);">❌ Error al consultar.</div>'
+    console.error(error)
+  }
+}
+
+async function eliminarVisualizacionCaso3() {
+  const id_contenido = document.getElementById("inputIdContenidoEliminar3").value.trim()
+  const fecha_visualizacion = document.getElementById("inputFechaEliminar3").value.trim()
+  const id_visualizacion = document.getElementById("inputIdVisualizacionEliminar3").value.trim()
+
+  if (!id_contenido || !fecha_visualizacion || !id_visualizacion) {
+    showAlert("❌ Completá todos los campos para eliminar.", "error")
+    return
+  }
+
+  if (!showConfirm("¿Eliminar esta visualización?")) return
+
+  try {
+    const res = await fetch(`https://netflix-backend-qbml.onrender.com/caso3/${id_contenido}/${fecha_visualizacion}/${id_visualizacion}`, {
+      method: "DELETE"
+    })
+    const data = await res.json()
+
+    if (res.ok) {
+      showAlert("🗑️ Visualización eliminada correctamente", "success")
+      consultarVisualizacionesCaso3()
+    } else {
+      showAlert(`❌ Error al eliminar: ${data.detalle || data.error}`, "error")
+    }
+  } catch (error) {
+    showAlert("❌ Error al conectar con el servidor.", "error")
+    console.error(error)
+  }
+}
+
 // Funciones auxiliares mejoradas
 function showAlert(message, type = "info") {
   // Crear elemento de alerta
