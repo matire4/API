@@ -239,19 +239,69 @@ app.delete('/caso2/:pais/:visualizaciones/:genero', async (req, res) => {
 // ===================
 // CASO 3 - Visualizaciones de una serie específica (Cassandra)
 // ===================
-app.get('/caso3', async (req, res) => {
+const { v4: uuidv4 } = require('uuid');
+
+// Crear nueva visualización
+app.post("/caso3", async (req, res) => {
+  const { id_contenido, fecha_visualizacion, id_perfil } = req.body;
+
   try {
-    const result = await cassandraClient.execute(`
-      SELECT id_visualizacion 
-      FROM visualizaciones_por_contenido
-      WHERE id_contenido = 123e4567-e89b-12d3-a456-426614174000 
-        AND fecha_visualizacion >= '2025-05-01'
-        AND fecha_visualizacion <= '2025-05-31'
-      ALLOW FILTERING
-    `);
-    res.json({ cantidad: result.rows.length });
+    const query = `INSERT INTO visualizaciones_por_contenido (
+      id_contenido, fecha_visualizacion, id_visualizacion, id_perfil
+    ) VALUES (?, ?, now(), ?)`;
+
+    await cassandraClient.execute(query, [
+      id_contenido,
+      fecha_visualizacion,
+      id_perfil
+    ], { prepare: true });
+
+    res.json({ mensaje: "✅ Visualización agregada" });
   } catch (error) {
-    res.status(500).json({ error: 'Error en Caso 3', detalle: error.message });
+    console.error("❌ Error al crear visualización:", error);
+    res.status(500).json({ error: "Error al crear visualización" });
+  }
+});
+
+// Contar visualizaciones en rango de fechas para un contenido
+app.post("/caso3/contar", async (req, res) => {
+  const { id_contenido, desde, hasta } = req.body;
+
+  try {
+    const query = `SELECT COUNT(*) FROM visualizaciones_por_contenido 
+      WHERE id_contenido = ? AND fecha_visualizacion >= ? AND fecha_visualizacion <= ?`;
+
+    const result = await cassandraClient.execute(query, [
+      id_contenido,
+      desde,
+      hasta
+    ], { prepare: true });
+
+    res.json({ total: result.rows[0]["count"].toString() });
+  } catch (error) {
+    console.error("❌ Error al contar visualizaciones:", error);
+    res.status(500).json({ error: "Error al contar visualizaciones" });
+  }
+});
+
+// Eliminar registro completo (requiere las 3 claves)
+app.delete("/caso3", async (req, res) => {
+  const { id_contenido, fecha_visualizacion, id_visualizacion } = req.body;
+
+  try {
+    const query = `DELETE FROM visualizaciones_por_contenido 
+      WHERE id_contenido = ? AND fecha_visualizacion = ? AND id_visualizacion = ?`;
+
+    await cassandraClient.execute(query, [
+      id_contenido,
+      fecha_visualizacion,
+      id_visualizacion
+    ], { prepare: true });
+
+    res.json({ mensaje: "✅ Registro eliminado" });
+  } catch (error) {
+    console.error("❌ Error al eliminar visualización:", error);
+    res.status(500).json({ error: "Error al eliminar visualización" });
   }
 });
 
