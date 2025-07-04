@@ -239,20 +239,148 @@ app.delete('/caso2/:pais/:visualizaciones/:genero', async (req, res) => {
 // ===================
 // CASO 3 - Visualizaciones de una serie específica (Cassandra)
 // ===================
-app.get('/caso3', async (req, res) => {
-  try {
-    const result = await cassandraClient.execute(`
-      SELECT id_visualizacion 
-      FROM visualizaciones_por_contenido
-      WHERE id_contenido = 123e4567-e89b-12d3-a456-426614174000 
-        AND fecha_visualizacion >= '2025-05-01'
-        AND fecha_visualizacion <= '2025-05-31'
-      ALLOW FILTERING
-    `);
-    res.json({ cantidad: result.rows.length });
-  } catch (error) {
-    res.status(500).json({ error: 'Error en Caso 3', detalle: error.message });
+// Crear visualización (solo se mandan fecha_visualizacion y id_perfil)
+// ===================
+app.post('/caso3', async (req, res) => {
+  const { fecha_visualizacion, id_perfil } = req.body;
+
+  if (!fecha_visualizacion || !id_perfil) {
+    return res.status(400).json({ error: '❌ Debes proporcionar fecha y ID perfil.' });
   }
+
+  try {
+    const id_contenido = cassandra.types.Uuid.random();
+    const id_visualizacion = cassandra.types.TimeUuid.now();
+    const fecha = new Date(fecha_visualizacion);
+
+    await cassandraClient.execute(
+      `INSERT INTO visualizaciones_por_contenido (id_contenido, fecha_visualizacion, id_visualizacion, id_perfil)
+       VALUES (?, ?, ?, ?)`,
+      [id_contenido, fecha, id_visualizacion, cassandra.types.Uuid.fromString(id_perfil)],
+      { prepare: true }
+    );
+
+    res.json({ mensaje: '✅ Visualización registrada correctamente', id_contenido: id_contenido.toString() });
+  } catch (error) {
+    res.status(500).json({ error: '❌ Error creando visualización', detalle: error.message });
+  }
+});
+
+app.get('/caso3/:id_contenido', async (req, res) => {
+  const { id_contenido } = req.params;
+  const { desde, hasta } = req.query;
+
+  if (!desde || !hasta) {
+    return res.status(400).json({ error: '❌ Debes indicar fechas desde y hasta.' });
+  }
+
+  try {
+    const result = await cassandraClient.execute(
+      `SELECT COUNT(*) FROM visualizaciones_por_contenido
+       WHERE id_contenido = ?
+         AND fecha_visualizacion >= ?
+         AND fecha_visualizacion <= ?
+       ALLOW FILTERING`,
+      [cassandra.types.Uuid.fromString(id_contenido), new Date(desde), new Date(hasta)],
+      { prepare: true }
+    );
+
+    const cantidad = result.rows[0]['count'];
+    res.json({ cantidad });
+  } catch (error) {
+    res.status(500).json({ error: '❌ Error consultando visualizaciones', detalle: error.message });
+  }
+});
+
+// Consultar cantidad por ID y fechas
+app.post('/caso3/consulta', async (req, res) => {
+  const { id_contenido, desde, hasta } = req.body;
+
+  if (!id_contenido || !desde || !hasta) {
+    return res.status(400).json({ error: '❌ Faltan parámetros de consulta' });
+  }
+
+  try {
+    const result = await cassandraClient.execute(
+      `SELECT COUNT(*) FROM visualizaciones_por_contenido
+       WHERE id_contenido = ? AND fecha_visualizacion >= ? AND fecha_visualizacion <= ? ALLOW FILTERING`,
+      [cassandra.types.Uuid.fromString(id_contenido), desde, hasta]
+    );
+
+    const cantidad = result.rows[0]['count'];
+    res.json({ cantidad });
+  } catch (error) {
+    res.status(500).json({ error: '❌ Error en la consulta', detalle: error.message });
+  }
+});
+
+// Eliminar visualización por ID contenido, fecha y visualización
+app.delete('/caso3', async (req, res) => {
+  const { id_contenido, fecha_visualizacion, id_visualizacion } = req.body;
+
+  if (!id_contenido || !fecha_visualizacion || !id_visualizacion) {
+    return res.status(400).json({ error: '❌ Parámetros incompletos para eliminar' });
+  }
+
+  try {
+    await cassandraClient.execute(
+      `DELETE FROM visualizaciones_por_contenido
+       WHERE id_contenido = ? AND fecha_visualizacion = ? AND id_visualizacion = ?`,
+      [
+        cassandra.types.Uuid.fromString(id_contenido),
+        fecha_visualizacion,
+        cassandra.types.TimeUuid.fromString(id_visualizacion)
+      ],
+      { prepare: true }
+    );
+
+    res.json({ mensaje: '🗑️ Visualización eliminada' });
+  } catch (error) {
+    res.status(500).json({ error: '❌ Error al eliminar visualización', detalle: error.message });
+  }
+});
+
+// GET /caso3 - Listar todas o filtrar por id_contenido y fechas
+app.get('/caso3', async (req, res) => {
+  const { id_contenido, desde, hasta } = req.query;
+
+  try {
+    let query = `SELECT * FROM visualizaciones_por_contenido`;
+    const params = [];
+    const conditions = [];
+
+    if (id_contenido) {
+      conditions.push(`id_contenido = ?`);
+      params.push(cassandra.types.Uuid.fromString(id_contenido));
+    }
+
+    if (desde) {
+      conditions.push(`fecha_visualizacion >= ?`);
+      params.push(new Date(desde));
+    }
+
+    if (hasta) {
+      conditions.push(`fecha_visualizacion <= ?`);
+      params.push(new Date(hasta));
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')} ALLOW FILTERING`;
+    }
+
+    const result = await cassandraClient.execute(query, params, { prepare: true });
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({
+      error: '❌ Error al obtener visualizaciones',
+      detalle: error.message,
+    });
+  }
+});
+
+// ✅ Servidor
+app.listen(3001, () => {
+  console.log('🚀 Backend escuchando en http://localhost:3001');
 });
 
 // ===================
@@ -260,10 +388,20 @@ app.get('/caso3', async (req, res) => {
 // ===================
 app.get('/caso4', async (req, res) => {
   try {
+    const anio = parseInt(req.query.anio) || 2025;
+
     const resultados = await Contenido.find(
-      { anio: 2025, cantidad_visualizaciones: { $gt: 1000 } },
-      { titulo: 1, generos: 1, cantidad_visualizaciones: 1 }
+      {
+        anio,
+        cantidad_visualizaciones: { $gt: 1000 }
+      },
+      {
+        titulo: 1,
+        generos: 1,
+        cantidad_visualizaciones: 1
+      }
     ).sort({ cantidad_visualizaciones: -1 });
+
     res.json(resultados);
   } catch (error) {
     res.status(500).json({ error: 'Error en Caso 4', detalle: error.message });
@@ -337,11 +475,20 @@ app.get('/caso5', async (req, res) => {
 // ===================
 app.get('/caso6', async (req, res) => {
   try {
-    const N = 10;
+    const min = parseInt(req.query.min) || 10;
+
     const resultados = await Contenido.find(
-      { es_pelicula: false, cantidad_calificaciones: { $gte: N } },
-      { titulo: 1, calificacion_promedio: 1, cantidad_calificaciones: 1 }
+      {
+        es_pelicula: false,
+        cantidad_calificaciones: { $gte: min }
+      },
+      {
+        titulo: 1,
+        calificacion_promedio: 1,
+        cantidad_calificaciones: 1
+      }
     ).sort({ calificacion_promedio: -1 }).limit(5);
+
     res.json(resultados);
   } catch (error) {
     res.status(500).json({ error: 'Error en Caso 6', detalle: error.message });

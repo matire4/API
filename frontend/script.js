@@ -441,6 +441,193 @@ function cargarGeneroParaEditar(pais, genero, visualizaciones) {
   document.getElementById("inputPais").scrollIntoView({ behavior: "smooth", block: "center" })
 }
 
+// Caso 3: Visualizaciones de una serie específica (Cassandra)
+// Crear visualización con fecha e ID perfil. Se generan automáticamente id_contenido e id_visualizacion
+
+async function crearVisualizacion() {
+  const fecha_visualizacion = document.getElementById("inputFechaVisualizacion")?.value
+  const id_perfil = document.getElementById("inputPerfil")?.value
+
+  if (!fecha_visualizacion || !id_perfil) {
+    showAlert("❌ Completá todos los campos.", "error")
+    return
+  }
+
+  showLoading("respuestaCaso3")
+
+  try {
+    const response = await fetch("http://localhost:3001/caso3", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fecha_visualizacion, id_perfil }),
+    })
+
+    const data = await response.json()
+    hideLoading("respuestaCaso3")
+
+    if (response.ok) {
+      showAlert(`✅ Visualización registrada. ID Contenido: ${data.id_contenido}`, "success")
+      clearForm(["inputFechaVisualizacion", "inputPerfil"])
+      consultarVisualizaciones()  // Mostrar la tabla actualizada
+    } else {
+      showAlert(`❌ ${data.error || data.detalle}`, "error")
+    }
+  } catch (error) {
+    hideLoading("respuestaCaso3")
+    showAlert("❌ Error al conectar con el servidor.", "error")
+  }
+}
+
+async function consultarVisualizaciones() {
+  const id = document.getElementById("inputIdContenidoFiltro")?.value.trim()
+  const desde = document.getElementById("inputDesde")?.value
+  const hasta = document.getElementById("inputHasta")?.value
+
+  showLoading("respuestaCaso3")
+
+  let url = "http://localhost:3001/caso3"
+  const params = []
+
+  if (id) params.push(`id_contenido=${id}`)
+  if (desde) params.push(`desde=${desde}`)
+  if (hasta) params.push(`hasta=${hasta}`)
+  if (params.length > 0) url += "?" + params.join("&")
+
+  try {
+    const response = await fetch(url)
+    const data = await response.json()
+    hideLoading("respuestaCaso3")
+
+    if (!response.ok) {
+      document.getElementById("respuestaCaso3").innerHTML =
+        `<div class="results-container" style="color: var(--danger-color);">❌ ${data.error || data.detalle}</div>`
+      return
+    }
+
+    const arrayData = Array.isArray(data) ? data : []
+
+    if (arrayData.length === 0) {
+      document.getElementById("respuestaCaso3").innerHTML =
+        `<div class="results-container"><i class="fas fa-info-circle"></i> No se encontraron visualizaciones.</div>`
+      return
+    }
+
+    const columns = [
+      { key: "id_contenido", label: "ID Contenido" },
+      { key: "fecha_visualizacion", label: "Fecha" },
+      { key: "id_visualizacion", label: "ID Visualización" },
+      { key: "id_perfil", label: "ID Perfil" },
+    ]
+
+    const actions = [
+      {
+        icon: "fas fa-trash",
+        class: "btn-danger",
+        title: "Eliminar",
+        onclick: `eliminarVisualizacion('{{id_contenido}}', '{{fecha_visualizacion}}', '{{id_visualizacion}}')`,
+      },
+    ]
+
+    const processedData = arrayData.map((item) => ({
+      ...item,
+      actions: actions.map((action) => ({
+        ...action,
+        onclick: action.onclick
+          .replace("{{id_contenido}}", item.id_contenido)
+          .replace("{{fecha_visualizacion}}", item.fecha_visualizacion)
+          .replace("{{id_visualizacion}}", item.id_visualizacion),
+      })),
+    }))
+
+    createTable(processedData, "respuestaCaso3", columns)
+  } catch (error) {
+    hideLoading("respuestaCaso3")
+    document.getElementById("respuestaCaso3").innerHTML =
+      `<div class="results-container" style="color: var(--danger-color);">❌ Error al consultar visualizaciones.</div>`
+  }
+}
+
+async function eliminarVisualizacion(id_contenido, fecha_visualizacion, id_visualizacion) {
+  if (!showConfirm("¿Estás seguro que querés eliminar esta visualización?")) return
+
+  try {
+    const res = await fetch("http://localhost:3001/caso3", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_contenido, fecha_visualizacion, id_visualizacion }),
+    })
+
+    const data = await res.json()
+    if (res.ok) {
+      showAlert("🗑️ Visualización eliminada correctamente", "success")
+      consultarVisualizaciones()
+    } else {
+      showAlert(`❌ ${data.error || data.detalle}`, "error")
+    }
+  } catch (error) {
+    showAlert("❌ Error al conectar con el servidor", "error")
+  }
+}
+
+// Caso 4
+
+async function consultarCaso4() {
+  const anio = document.getElementById("inputAnioCaso4").value.trim();
+  showLoading("respuestaCaso4");
+
+  let url = "http://localhost:3001/caso4";
+  if (anio) url += `?anio=${anio}`;
+
+  try {
+    const res = await fetch(url);
+    const datos = await res.json();
+    hideLoading("respuestaCaso4");
+
+    const columns = [
+      { key: "titulo", label: "Título" },
+      { key: "generos", label: "Géneros" },
+      { key: "cantidad_visualizaciones", label: "Visualizaciones" },
+    ];
+
+    const processedData = datos.map((item) => ({
+      ...item,
+      generos: item.generos?.join(", "),
+    }));
+
+    createTable(processedData, "respuestaCaso4", columns);
+  } catch (error) {
+    hideLoading("respuestaCaso4");
+    showAlert("❌ Error consultando caso 4", "error");
+  }
+}
+
+// Caso 6
+async function consultarCaso6() {
+  const min = document.getElementById("inputMinCaso6").value.trim();
+  showLoading("respuestaCaso6");
+
+  let url = "http://localhost:3001/caso6";
+  if (min) url += `?min=${min}`;
+
+  try {
+    const res = await fetch(url);
+    const datos = await res.json();
+    hideLoading("respuestaCaso6");
+
+    const columns = [
+      { key: "titulo", label: "Título" },
+      { key: "calificacion_promedio", label: "Promedio" },
+      { key: "cantidad_calificaciones", label: "Calificaciones" },
+    ];
+
+    createTable(datos, "respuestaCaso6", columns);
+  } catch (error) {
+    hideLoading("respuestaCaso6");
+    showAlert("❌ Error consultando caso 6", "error");
+  }
+}
+
+
 // Funciones auxiliares mejoradas
 function showAlert(message, type = "info") {
   // Crear elemento de alerta

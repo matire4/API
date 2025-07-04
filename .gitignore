@@ -9,7 +9,7 @@ logs
 .env
 
 # Cassandra Secure Connect Bundle
-*.zip
+# *.zip
 
 # IDE settings
 .vscode/

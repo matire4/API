@@ -147,22 +147,57 @@
                 <!-- Casos 3-6 (Placeholders mejorados) -->
                 <div class="case-card" data-case="3">
                     <div class="case-header" onclick="toggleMenu(3)">
-                        <div class="case-icon">
-                            <i class="fas fa-tv"></i>
-                        </div>
+                        <div class="case-icon"><i class="fas fa-video"></i></div>
                         <div class="case-info">
-                            <h3>Visualizaciones de serie</h3>
-                            <p>Análisis detallado por contenido</p>
+                            <h3>Visualizaciones por Contenido</h3>
+                            <p>Cantidad de visualizaciones de una serie</p>
                         </div>
-                        <div class="case-arrow">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
+                        <div class="case-arrow"><i class="fas fa-chevron-down"></i></div>
                     </div>
                     <div id="menu3" class="case-content">
-                        <div class="placeholder-content">
-                            <i class="fas fa-tools"></i>
-                            <h4>Funcionalidad en desarrollo</h4>
-                            <p>Esta sección estará disponible próximamente</p>
+                        <div class="section">
+                            <h4><i class="fas fa-plus-circle"></i> Crear Visualización</h4>
+                            <div class="form-grid">
+                                <div class="input-group">
+                                    <label for="inputFechaVisualizacion">Fecha de visualización</label>
+                                    <input type="date" id="inputFechaVisualizacion" />
+                                </div>
+                                <div class="input-group">
+                                    <label for="inputPerfil">ID Perfil</label>
+                                    <input type="text" id="inputPerfil" placeholder="UUID del perfil" />
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="crearVisualizacion()">
+                                <i class="fas fa-save"></i> Subir
+                            </button>
+                        </div>
+            
+                        <div class="section">
+                            <h4><i class="fas fa-search"></i> Consultar Visualizaciones</h4>
+                            <div class="form-grid">
+                                <div class="input-group">
+                                    <label for="inputIdContenidoFiltro">ID Contenido</label>
+                                    <input type="text" id="inputIdContenidoFiltro" placeholder="UUID del contenido" />
+                                </div>
+                                <div class="input-group">
+                                    <label for="inputDesde">Desde</label>
+                                    <input type="date" id="inputDesde" />
+                                </div>
+                                <div class="input-group">
+                                    <label for="inputHasta">Hasta</label>
+                                    <input type="date" id="inputHasta" />
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" onclick="consultarVisualizaciones()">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                        </div>
+            
+                        <div class="section">
+                            <h4><i class="fas fa-list"></i> Resultados</h4>
+                            <div id="respuestaCaso3" class="results-container">
+                                Esperando acción...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -181,12 +216,23 @@
                         </div>
                     </div>
                     <div id="menu4" class="case-content">
-                        <div class="placeholder-content">
-                            <i class="fas fa-tools"></i>
-                            <h4>Funcionalidad en desarrollo</h4>
-                            <p>Esta sección estará disponible próximamente</p>
+                        <div class="section">
+                          <h4><i class="fas fa-search"></i> Consultar por Año</h4>
+                          <div class="search-bar">
+                            <input type="number" id="inputAnioCaso4" placeholder="Ej: 2025" />
+                            <button class="btn btn-secondary" onclick="consultarCaso4()">
+                              <i class="fas fa-search"></i> Buscar
+                            </button>
+                          </div>
                         </div>
-                    </div>
+                      
+                        <div class="section">
+                          <h4><i class="fas fa-list"></i> Resultados</h4>
+                          <div id="respuestaCaso4" class="results-container">
+                            Esperando acción...
+                          </div>
+                        </div>
+                      </div>
                 </div>
 
                 <div class="case-card" data-case="5">
@@ -225,10 +271,21 @@
                         </div>
                     </div>
                     <div id="menu6" class="case-content">
-                        <div class="placeholder-content">
-                            <i class="fas fa-tools"></i>
-                            <h4>Funcionalidad en desarrollo</h4>
-                            <p>Esta sección estará disponible próximamente</p>
+                        <div class="section">
+                          <h4><i class="fas fa-search"></i> Consultar por Mínimo de Calificaciones</h4>
+                          <div class="search-bar">
+                            <input type="number" id="inputMinCaso6" placeholder="Ej: 10" />
+                            <button class="btn btn-secondary" onclick="consultarCaso6()">
+                              <i class="fas fa-search"></i> Buscar
+                            </button>
+                          </div>
+                        </div>
+                      
+                        <div class="section">
+                          <h4><i class="fas fa-list"></i> Resultados</h4>
+                          <div id="respuestaCaso6" class="results-container">
+                            Esperando acción...
+                          </div>
                         </div>
                     </div>
                 </div>
