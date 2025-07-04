@@ -1,4 +1,4 @@
-const backendURL = "https://api-rho-eight-93.vercel.app";
+const backendURL = "https://netflix-backend-qbml.onrender.com";
 
 // Variables globales para el tema
 let currentTheme = localStorage.getItem("theme") || "light"
