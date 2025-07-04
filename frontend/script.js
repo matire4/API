@@ -185,7 +185,7 @@ async function crearTitulo() {
   } else {
     const data = { ano_semana: semana, titulo, vistas: vistasInt }
     try {
-      const res = await fetch("${backendURL}/caso1", {
+      const res = await fetch(`${backendURL}/caso1`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -214,7 +214,7 @@ async function consultarTitulos() {
   const semana = document.getElementById("inputSemanaConsulta").value.trim()
   showLoading("respuestaCaso1")
 
-  let url = "${backendURL}/caso1"
+  let url = `${backendURL}/caso1`
   if (semana) {
     url += `/${semana}`
   }
@@ -342,7 +342,7 @@ async function crearGenero() {
     }
   } else {
     try {
-      const res = await fetch("${backendURL}/caso2", {
+      const res = await fetch(`${backendURL}/caso2`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pais, genero, visualizaciones: visualizacionesInt }),
@@ -370,7 +370,7 @@ async function consultarGeneros() {
   const pais = document.getElementById("inputPaisConsulta").value.trim()
   showLoading("respuestaCaso2")
 
-  let url = "${backendURL}/caso2"
+  let url = `${backendURL}/caso2`
   if (pais) url += `/${pais}`
 
   try {
@@ -458,7 +458,7 @@ async function crearVisualizacion() {
   showLoading("respuestaCaso3")
 
   try {
-    const response = await fetch("${backendURL}/caso3", {
+    const response = await fetch(`${backendURL}/caso3`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fecha_visualizacion, id_perfil }),
@@ -487,7 +487,7 @@ async function consultarVisualizaciones() {
 
   showLoading("respuestaCaso3")
 
-  let url = "${backendURL}/caso3"
+  let url = `${backendURL}/caso3`
   const params = []
 
   if (id) params.push(`id_contenido=${id}`)
@@ -553,7 +553,7 @@ async function eliminarVisualizacion(id_contenido, fecha_visualizacion, id_visua
   if (!showConfirm("¿Estás seguro que querés eliminar esta visualización?")) return
 
   try {
-    const res = await fetch("${backendURL}/caso3", {
+    const res = await fetch(`${backendURL}/caso3`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id_contenido, fecha_visualizacion, id_visualizacion }),
@@ -577,7 +577,7 @@ async function consultarCaso4() {
   const anio = document.getElementById("inputAnioCaso4").value.trim();
   showLoading("respuestaCaso4");
 
-  let url = "${backendURL}/caso4";
+  let url = `${backendURL}/caso4`;
   if (anio) url += `?anio=${anio}`;
 
   try {
@@ -608,7 +608,7 @@ async function consultarCaso6() {
   const min = document.getElementById("inputMinCaso6").value.trim();
   showLoading("respuestaCaso6");
 
-  let url = "${backendURL}/caso6";
+  let url = `${backendURL}/caso6`;
   if (min) url += `?min=${min}`;
 
   try {
