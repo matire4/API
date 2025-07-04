@@ -7,7 +7,9 @@ const path = require('path');
 require('dotenv').config(); // 👈 Carga variables del .env
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "https://api-rho-eight-93.vercel.app"  // tu frontend
+}));
 app.use(express.json());
 
 // Conexión a MongoDB
